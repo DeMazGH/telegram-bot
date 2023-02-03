@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import pro.sky.telegrambot.component.SendHelper;
 import pro.sky.telegrambot.service.NotificationTaskService;
 
 import javax.annotation.PostConstruct;
@@ -31,9 +32,13 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
     private final NotificationTaskService notificationTaskService;
 
-    public TelegramBotUpdatesListener(TelegramBot telegramBot, NotificationTaskService notificationTaskService) {
+    private final SendHelper sendHelper;
+
+    public TelegramBotUpdatesListener(TelegramBot telegramBot, NotificationTaskService notificationTaskService,
+                                      SendHelper sendHelper) {
         this.telegramBot = telegramBot;
         this.notificationTaskService = notificationTaskService;
+        this.sendHelper = sendHelper;
     }
 
     @PostConstruct
@@ -50,34 +55,22 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             Long chatId = update.message().chat().id();
 
             if ("/start".equals(text)) {
-                sendMessage(chatId, "Привет, " + update.message().chat().username() + "! " +
-                        "Для планрования задачи отправь её в формате:\n**01.01.2022 20:00 Сделать домашнюю работу**");
+                sendHelper.sendMessage(chatId, "Привет, " + update.message().chat().username() + "! " +
+                        "Для планрования задачи отправь её в формате:\n**01.01.2022 20:00 Сделать домашнюю работу**",
+                        ParseMode.MarkdownV2);
             } else {
                 Matcher matcher = PATTERN.matcher(text);
                 LocalDateTime dateTime;
                 if (matcher.matches() && (dateTime = parse(matcher.group(1))) != null) {
                     String message = matcher.group(3);
                     notificationTaskService.create(chatId, message, dateTime);
-                    sendMessage(chatId, "Задача запланирована!");
+                    sendHelper.sendMessage(chatId, "Задача запланирована!");
                 } else {
-                    sendMessage(chatId, "Некорректный формат сообщения!");
+                    sendHelper.sendMessage(chatId, "Некорректный формат сообщения!");
                 }
             }
         });
         return UpdatesListener.CONFIRMED_UPDATES_ALL;
-    }
-
-    private void sendMessage(Long chatId, String text, ParseMode parseMode) {
-        SendMessage sendMessage = new SendMessage(chatId, text);
-        sendMessage.parseMode(parseMode);
-        SendResponse sendResponse = telegramBot.execute(sendMessage);
-        if (!sendResponse.isOk()) {
-            logger.error(sendResponse.toString());
-        }
-    }
-
-    private void sendMessage(Long chatId, String text) {
-        sendMessage(chatId, text, ParseMode.MarkdownV2);
     }
 
     @Nullable
