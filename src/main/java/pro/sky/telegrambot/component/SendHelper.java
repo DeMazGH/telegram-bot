@@ -8,12 +8,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
-import pro.sky.telegrambot.listener.TelegramBotUpdatesListener;
 
 @Component
 public class SendHelper {
 
-    private final Logger logger = LoggerFactory.getLogger(TelegramBotUpdatesListener.class);
+    private final Logger logger = LoggerFactory.getLogger(SendHelper.class);
 
     private final TelegramBot telegramBot;
 
